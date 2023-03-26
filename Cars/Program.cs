@@ -64,7 +64,7 @@ namespace Cars
                 Console.WriteLine();
                 #endregion
 
-                article_7(); // From the search results page click "Model X" (This will check "Model X" checkbox but will not uncheck "Model S" checkbox, so the results will include both Model X and Model S)
+                article_7(); // From the search results page click "Model X" to make checked it, than click "Model S" checkbox to uncheck it.
                 Console.WriteLine();
 
                 #region Gather "Model X" data
@@ -74,7 +74,7 @@ namespace Cars
                 Console.WriteLine();
                 #endregion
 
-                #region Write data to file:
+                #region Write data to file
                 var fileName = Path.Combine(pathForFiles, $"CarsComData.json");
                 File.WriteAllText(fileName, JsonConvert.SerializeObject(results, Formatting.Indented));
                 Console.WriteLine($"All results written to file '{fileName}'");
@@ -96,6 +96,10 @@ namespace Cars
             Cef.Shutdown();
         }
 
+        /// <summary>
+        /// Login.
+        /// </summary>
+        /// <exception cref="Exception"></exception>
         private static void article_1()
         {
             Console.WriteLine("Loading login page...");
@@ -132,6 +136,10 @@ namespace Cars
             Console.WriteLine("Login successful.");
         }
 
+        /// <summary>
+        /// Set filters and click search button.
+        /// </summary>
+        /// <exception cref="Exception"></exception>
         private static void article_2_3()
         {
             // Set filters for search and click "Search" button:
@@ -162,6 +170,11 @@ namespace Cars
                 throw new Exception("Timed out while search was starting");
         }
 
+        /// <summary>
+        /// Gather all data for all cars on the first 2 pages.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         private static List<object> article_4()
         {
             // Gather all cars on the first page of results:
@@ -193,6 +206,11 @@ namespace Cars
             return carList;
         }
 
+        /// <summary>
+        /// Choose a specific car (that has "Home Delivery" info if any or first car in the list) and gather that specific car data.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         private static object article_5()
         {
             // Choose a specific car:
@@ -201,8 +219,10 @@ namespace Cars
             var jsCode = @"
                 function clickSpecificCar() {
                     let container = document.querySelector('#vehicle-cards-container');
-                    let firstCar = container.querySelector('a.vehicle-card-link');
-                    firstCar.click();
+                    let specificCar = container.querySelector(""div.vehicle-details > div.vehicle-badging[data-contents*='\""home_delivery_badge\"":true']"")?.parentElement?.querySelector('a.vehicle-card-link');
+                    if (!specificCar)
+                        specificCar = container.querySelector('a.vehicle-card-link');
+                    specificCar.click();
                 }
 
                 clickSpecificCar();
@@ -220,7 +240,7 @@ namespace Cars
                     car.title = document.querySelector('div.title-section > h1.listing-title').innerHTML;
                     car.mileage = document.querySelector('div.title-section > div.listing-mileage').innerHTML?.trim();
                     car.primaryPrice = document.querySelector('div.price-section > span.primary-price').innerHTML;
-                    car.secondaryPrice = document.querySelector('div.price-section > span.secondary-price').innerHTML;
+                    car.secondaryPrice = document.querySelector('div.price-section > span.secondary-price')?.innerHTML;
                     
                     let sections = document.querySelectorAll('div.basics-content-wrapper > section.sds-page-section');
                     for (let i = 0; i < 3; i++) {
@@ -254,6 +274,11 @@ namespace Cars
             return result;
         }
 
+        /// <summary>
+        /// Click "Home Delivery" button and gather all data.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         private static object article_6()
         {
             // Click "home delivery":
@@ -306,6 +331,10 @@ namespace Cars
             return result;
         }
 
+        /// <summary>
+        /// Go back to search results page, click "Model X" to make checked it, than click "Model S" checkbox to uncheck it.
+        /// </summary>
+        /// <exception cref="Exception"></exception>
         private static void article_7()
         {
             // Click "Search Results" to go back:
@@ -330,8 +359,24 @@ namespace Cars
             taskComplete = browser.EvaluateScriptAsync(jsCode).Wait(defaultTimeout);
             if (!taskComplete)
                 throw new Exception("Timed out while clicking 'Model X' checkbox");
+
+            // Click "Model S" to uncheck it:
+            waitForBrowser();
+            Console.WriteLine("Clicking 'Model S' checkbox to uncheck it...");
+            jsCode = @"
+                let modelSCheckBox = document.querySelector('input#model_tesla-model_s');
+                modelSCheckBox.click();
+            ";
+            taskComplete = browser.EvaluateScriptAsync(jsCode).Wait(defaultTimeout);
+            if (!taskComplete)
+                throw new Exception("Timed out while clicking 'Model S' checkbox to uncheck");
         }
 
+        /// <summary>
+        /// Gather all cars data in current page.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         private static List<object> gatherAllCarsDataInPage()
         {
             List<object> carList = null;
@@ -370,6 +415,12 @@ namespace Cars
             return carList;
         }
 
+        /// <summary>
+        /// Wait for browser to start loading and complete loading process.
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <param name="loadTimeout"></param>
+        /// <exception cref="Exception"></exception>
         private static void waitForBrowser(long timeout = 1000, long loadTimeout = 20000)
         {
             var sw = new Stopwatch();
